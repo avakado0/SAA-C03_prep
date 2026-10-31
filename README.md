@@ -2,6 +2,8 @@
 
 Notes, labs and a local quiz page built around one idea: **the questions you get wrong are the study material.** Not a braindump. No exam questions are reproduced here. Bring your own practice tests.
 
+**Result:** passed SAA-C03 on October 22, 2026, after 222 hours and 59 minutes of study using these tactics.
+
 Unofficial. Not affiliated with AWS, Udemy, Tutorials Dojo or anyone else.
 
 ## Repo map
@@ -51,7 +53,7 @@ Pass line is 72% on these sets.
 | Tutorials Dojo | 69% | 66% | 73% | 70% |
 | AWS official sample set (20 Qs) | 55% | | | |
 
-Exam result: _TBD_
+Exam result: **passed on October 22, 2026**, after 222 hours and 59 minutes of study using these tactics.
 
 ## Topics I kept missing
 
