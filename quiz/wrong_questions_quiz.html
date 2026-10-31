@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wrong Answer Drill</title>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--ink:#1c2230;--mute:#667085;--line:#e3e6ee;--accent:#5b5bd6;--accent-ink:#fff;--ok:#16a34a;--ok-bg:#e8f7ee;--bad:#dc2626;--bad-bg:#fdeaea;--chip:#eceefa}
+@media (prefers-color-scheme:dark){:root{--bg:#10131b;--card:#181c27;--ink:#e8ebf3;--mute:#93a0b8;--line:#2a3042;--accent:#8b8bf5;--accent-ink:#10131b;--ok:#4ade80;--ok-bg:#12301f;--bad:#f87171;--bad-bg:#3a1717;--chip:#232942}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:900px;margin:0 auto;padding:20px 16px 80px}
+h1{font-size:1.5rem;margin:0 0 4px}
+.sub{color:var(--mute);margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:14px}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:var(--chip);color:var(--ink);border-radius:999px;padding:6px 12px;font-size:.88rem;cursor:pointer}
+.chip small{color:var(--mute);margin-left:4px}
+.chip.on{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.chip.on small{color:inherit;opacity:.8}
+h2{font-size:.8rem;text-transform:uppercase;letter-spacing:.06em;color:var(--mute);margin:14px 0 8px}
+button{font:inherit;cursor:pointer}
+.btn{background:var(--accent);color:var(--accent-ink);border:0;border-radius:10px;padding:10px 16px;font-weight:600}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.modes{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+label.chk{display:flex;gap:6px;align-items:center;color:var(--mute);font-size:.9rem}
+.qitem{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid var(--line);border-radius:10px;margin-bottom:8px;cursor:pointer;background:var(--card);width:100%;text-align:left;color:var(--ink)}
+.qitem:hover{border-color:var(--accent)}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--line);margin-top:7px;flex:none}
+.dot.ok{background:var(--ok)}.dot.bad{background:var(--bad)}
+.tag{font-size:.72rem;color:var(--mute);border:1px solid var(--line);border-radius:6px;padding:1px 6px;margin-right:4px;white-space:nowrap}
+.stem{font-size:1.08rem;font-weight:600;margin:6px 0 14px;white-space:pre-wrap}
+.choice{display:block;width:100%;text-align:left;border:2px solid var(--line);background:var(--card);color:var(--ink);border-radius:12px;padding:12px 14px;margin-bottom:10px;position:relative}
+.choice:hover:not(:disabled){border-color:var(--accent)}
+.choice.sel{border-color:var(--accent);background:var(--chip)}
+.choice.right{border-color:var(--ok);background:var(--ok-bg)}
+.choice.wrong{border-color:var(--bad);background:var(--bad-bg)}
+.choice:disabled{cursor:default}
+.reveal{border-left:4px solid var(--accent);padding:6px 14px;margin-top:14px;background:var(--chip);border-radius:0 10px 10px 0}
+.reveal p{margin:6px 0}
+.mute{color:var(--mute)}
+.bar{height:8px;background:var(--line);border-radius:99px;overflow:hidden;margin:6px 0 14px}
+.bar>i{display:block;height:100%;background:var(--accent);transition:width .3s}
+.pop{position:relative}
+.fx{position:absolute;inset:0;pointer-events:none;overflow:hidden;border-radius:14px;z-index:5}
+.fx .big{position:absolute;left:50%;top:42%;width:110px;height:110px;margin:-55px 0 0 -55px;animation:bigpop .9s ease-out forwards}
+@keyframes bigpop{0%{transform:scale(.2);opacity:0}30%{transform:scale(1.15);opacity:1}70%{transform:scale(1);opacity:1}100%{transform:scale(1.05);opacity:0}}
+.fx .bit{position:absolute;left:50%;top:42%;width:9px;height:14px;border-radius:2px;animation:fly 1.1s ease-out forwards}
+@keyframes fly{to{transform:translate(var(--dx),var(--dy)) rotate(var(--rot));opacity:0}}
+.shake{animation:shake .5s}
+@keyframes shake{10%,90%{transform:translateX(-3px)}20%,80%{transform:translateX(6px)}30%,50%,70%{transform:translateX(-9px)}40%,60%{transform:translateX(9px)}}
+.glow{animation:glow 1s}
+@keyframes glow{0%{box-shadow:0 0 0 0 var(--ok)}60%{box-shadow:0 0 0 14px transparent}}
+.res{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid var(--line);border-radius:10px;margin-bottom:10px;background:var(--card);opacity:0;animation:rise .4s forwards}
+@keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.mark{font-size:1.4rem;line-height:1;flex:none;width:28px;text-align:center}
+.score{font-size:2.6rem;font-weight:800}
+.hidden{display:none}
+@media (max-width:520px){.wrap{padding:14px 12px 70px}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app"></div>
+<script>
+const DATA = [{"id": "ex-1", "source": "Example", "q": "Site-to-Site VPN: which side does the Virtual Private Gateway live on?", "correct": "AWS side. The Customer Gateway represents the on-premises device.", "myWrong": "On-premises side, with the Customer Gateway in AWS.", "note": "VGW = AWS-side VPN endpoint attached to the VPC. Customer Gateway = AWS resource describing your on-prem router.", "domains": ["Secure"], "services": ["Direct Connect / VPN"], "status": "confirmed"}, {"id": "ex-2", "source": "Example", "q": "Which service records who made an API call against an S3 bucket?", "correct": "AWS CloudTrail.", "myWrong": "S3 server access logs queried with Athena.", "note": "CloudTrail = API audit trail (who, what, when). Access logs = request-level detail, best effort, not the audit tool AWS recommends.", "domains": ["Secure"], "services": ["S3", "CloudTrail / Config"], "status": "confirmed"}, {"id": "ex-3", "source": "Example", "q": "Spread placement group: how many running instances per AZ per group?", "correct": "7.", "myWrong": "No limit.", "note": "Spread = each instance on distinct hardware, max 7 per AZ. Divide instance count by 7 and round up to get the number of AZs needed.", "domains": ["Resilient"], "services": ["EC2"], "status": "confirmed"}, {"id": "ex-4", "source": "Example", "q": "Can you edit an existing Launch Configuration?", "correct": "No. Create a new one and point the Auto Scaling group at it.", "myWrong": "Yes, edit it in place.", "note": "Launch Configurations are immutable. Launch Templates support versions, which is why they replaced Launch Configurations.", "domains": ["Resilient"], "services": ["Auto Scaling"], "status": "confirmed"}, {"id": "ex-5", "source": "Example", "q": "Best way to give users in one AWS account access to another account?", "correct": "An IAM role in the target account that the users assume.", "myWrong": "Share IAM user credentials from the target account.", "note": "Cross-account access = roles + sts:AssumeRole. Never share long-term credentials.", "domains": ["Secure"], "services": ["IAM"], "status": "confirmed"}, {"id": "ex-6", "source": "Example", "q": "Allow only the load balancer to reach EC2 on port 80. What goes in the instance security group?", "correct": "Inbound TCP 80 with the load balancer's security group as the source.", "myWrong": "Inbound TCP 80 from the load balancer subnet CIDR.", "note": "Referencing a security group follows the members wherever their IPs are. A CIDR also lets anything else in that subnet through.", "domains": ["Secure"], "services": ["VPC", "ELB"], "status": "confirmed"}, {"id": "ex-7", "source": "Example", "q": "Where does a NAT Gateway live?", "correct": "In a public subnet, with an Elastic IP. Private subnets route 0.0.0.0/0 to it.", "myWrong": "In the private subnet it serves.", "note": "The NAT Gateway itself needs a route to the Internet Gateway, so it sits in a public subnet.", "domains": ["High-Performing"], "services": ["VPC"], "status": "confirmed"}, {"id": "ex-8", "source": "Example", "q": "Does ACM renew imported third-party certificates?", "correct": "No. Only certificates ACM issued are renewed automatically.", "myWrong": "Yes, all certificates in ACM auto-renew.", "note": "Watch imported certificates with the AWS Config managed rule for certificate expiry, plus an SNS notification.", "domains": ["Secure"], "services": ["ACM"], "status": "confirmed"}, {"id": "ex-9", "source": "Example", "q": "Is VPC peering transitive?", "correct": "No. A peered with B and B peered with C does not let A reach C.", "myWrong": null, "note": "Need transitive routing between many VPCs? Use Transit Gateway.", "domains": ["High-Performing"], "services": ["VPC"], "status": "confirmed"}, {"id": "ex-10", "source": "Example", "q": "Which S3 feature makes objects impossible to delete or overwrite for a set period, even by root?", "options": ["Object Lock in compliance mode", "MFA Delete", "Versioning", "Object Lock in governance mode"], "correctIndex": 0, "correct": "Object Lock in compliance mode.", "myWrong": null, "note": "Governance mode can be bypassed with special permissions. Compliance mode cannot be bypassed by anyone until retention ends.", "domains": ["Secure"], "services": ["S3"], "status": "confirmed"}];
+</script>
+<script>
+const Q = DATA.filter(e => e.status === 'confirmed');
+const $ = (s, r = document) => r.querySelector(s);
+const el = (t, a = {}, ...k) => { const n = document.createElement(t); for (const [x, v] of Object.entries(a)) { if (v == null || v === false) continue; if (x === 'class') n.className = v; else if (x.startsWith('on')) n.addEventListener(x.slice(2), v); else n.setAttribute(x, v); } k.flat().forEach(c => n.append(c instanceof Node ? c : document.createTextNode(c))); return n; };
+const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const store = { get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} } };
+let missed = store.get('wq_missed', {});
+const recordResult = (id, ok) => { missed[id] = ok ? Math.max(0, (missed[id] || 0) - 1) : (missed[id] || 0) + 1; store.set('wq_missed', missed); };
+
+const kindOf = q => q.options && q.options.length > 1 ? 'mcq' : q.myWrong ? 'two' : 'card';
+const choicesOf = q => {
+  if (kindOf(q) === 'mcq') return shuffle(q.options.map((t, i) => ({ t, ok: i === q.correctIndex })));
+  if (kindOf(q) === 'two') return shuffle([{ t: q.correct, ok: true }, { t: q.myWrong, ok: false }]);
+  return [];
+};
+
+const topics = () => {
+  const dom = {}, svc = {};
+  Q.forEach(q => { q.domains.forEach(d => dom[d] = (dom[d] || 0) + 1); q.services.forEach(s => svc[s] = (svc[s] || 0) + 1); });
+  const sort = o => Object.entries(o).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  return { dom: sort(dom), svc: sort(svc) };
+};
+const inTopic = (q, t) => !t || t === '*' || q.domains.includes(t) || q.services.includes(t);
+
+const state = { topic: store.get('wq_topic', '*'), onlyMissed: false };
+const app = $('#app');
+
+function fx(host, ok) {
+  const box = el('div', { class: 'fx' });
+  const svg = ok
+    ? '<svg class="big" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#16a34a"/><path d="M28 52l16 16 30-34" fill="none" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+    : '<svg class="big" viewBox="0 0 100 100"><circle cx="50" cy="50" r="46" fill="#dc2626"/><path d="M33 33l34 34M67 33L33 67" stroke="#fff" stroke-width="9" stroke-linecap="round"/></svg>';
+  box.innerHTML = svg;
+  if (ok) {
+    const cols = ['#16a34a', '#facc15', '#5b5bd6', '#f97316', '#06b6d4', '#ec4899'];
+    for (let i = 0; i < 36; i++) {
+      const b = el('i', { class: 'bit' });
+      const ang = Math.random() * Math.PI * 2, dist = 90 + Math.random() * 190;
+      b.style.cssText = `background:${cols[i % cols.length]};--dx:${Math.cos(ang) * dist}px;--dy:${Math.sin(ang) * dist - 40}px;--rot:${Math.random() * 720 - 360}deg`;
+      box.append(b);
+    }
+  }
+  host.append(box);
+  setTimeout(() => box.remove(), 1300);
+  host.classList.remove('shake', 'glow'); void host.offsetWidth;
+  host.classList.add(ok ? 'glow' : 'shake');
+}
+
+// ---------- home ----------
+function home() {
+  const t = topics();
+  const pool = () => Q.filter(q => inTopic(q, state.topic) && (!state.onlyMissed || missed[q.id] > 0));
+  app.replaceChildren(
+    el('h1', {}, 'Wrong Answer Drill'),
+    el('p', { class: 'sub' }, `${Q.length} questions you got wrong, across ${new Set(Q.map(q => q.source)).size} source(s). Pick a topic, then practice or take a 10-question test.`)
+  );
+  const card = el('div', { class: 'card' });
+  const mk = ([name, n]) => el('button', { class: 'chip' + (state.topic === name ? ' on' : ''), onclick: () => { state.topic = name; store.set('wq_topic', name); home(); } }, name, el('small', {}, String(n)));
+  card.append(
+    el('div', { class: 'chips' }, el('button', { class: 'chip' + (state.topic === '*' ? ' on' : ''), onclick: () => { state.topic = '*'; store.set('wq_topic', '*'); home(); } }, 'All topics', el('small', {}, String(Q.length)))),
+    el('h2', {}, 'Exam domain'), el('div', { class: 'chips' }, t.dom.map(mk)),
+    el('h2', {}, 'AWS service / area'), el('div', { class: 'chips' }, t.svc.map(mk))
+  );
+  app.append(card);
+  const n = pool().length;
+  const mm = Object.values(missed).filter(v => v > 0).length;
+  const go = el('div', { class: 'card' });
+  go.append(
+    el('div', { class: 'row' },
+      el('strong', {}, state.topic === '*' ? 'All topics' : state.topic), el('span', { class: 'mute' }, `· ${n} question${n === 1 ? '' : 's'}`),
+      el('label', { class: 'chk', style: 'margin-left:auto' }, el('input', { type: 'checkbox', ...(state.onlyMissed ? { checked: '' } : {}), onchange: e => { state.onlyMissed = e.target.checked; home(); } }), `Only ones I keep missing (${mm})`)),
+    el('div', { class: 'modes' },
+      el('button', { class: 'btn', disabled: n ? null : '', onclick: () => practice(pool()) }, 'Practice mode'),
+      el('button', { class: 'btn ghost', disabled: n ? null : '', onclick: () => test(pool()) }, `Test mode (${Math.min(10, n)} random)`)),
+    el('p', { class: 'mute', style: 'margin:10px 0 0;font-size:.85rem' }, 'Practice: browse every question for the topic, answer, see right/wrong right away. Test: 10 random, no answers until you finish.')
+  );
+  app.append(go);
+}
+
+// ---------- shared question renderer ----------
+function meta(q) { return el('div', {}, el('span', { class: 'tag' }, q.source), ...q.domains.map(d => el('span', { class: 'tag' }, d)), ...q.services.map(s => el('span', { class: 'tag' }, s))); }
+
+function renderQuestion(q, host, { feedback, onAnswer }) {
+  const kind = kindOf(q);
+  host.replaceChildren(meta(q), el('div', { class: 'stem' }, q.fullQ || q.q));
+  let done = false;
+  const reveal = ok => {
+    const r = el('div', { class: 'reveal' },
+      el('p', {}, el('strong', {}, 'Correct: '), q.correct),
+      q.myWrong ? el('p', {}, el('strong', {}, 'You picked before: '), q.myWrong) : '',
+      q.note ? el('p', { class: 'mute' }, q.note) : '');
+    host.append(r);
+  };
+  if (kind === 'card') {
+    const area = el('div', {});
+    area.append(el('button', { class: 'btn', onclick: () => {
+      if (feedback) {
+        area.replaceChildren(el('div', { class: 'reveal' }, el('p', {}, el('strong', {}, 'Answer: '), q.correct), q.note ? el('p', { class: 'mute' }, q.note) : ''), el('p', { class: 'mute' }, 'Did you know it?'),
+          el('div', { class: 'row' }, el('button', { class: 'btn', onclick: () => { fx(host, true); recordResult(q.id, true); onAnswer(true, 'knew it'); lock(); } }, 'Got it'), el('button', { class: 'btn ghost', onclick: () => { fx(host, false); recordResult(q.id, false); onAnswer(false, 'missed'); lock(); } }, 'Missed')));
+      }
+    } }, 'Show answer'));
+    if (!feedback) {
+      area.replaceChildren(el('p', { class: 'mute' }, 'Answer it in your head. You will see the answer at the end.'),
+        el('div', { class: 'row' }, el('button', { class: 'btn', onclick: () => onAnswer(true, 'I know this') }, 'I know this'), el('button', { class: 'btn ghost', onclick: () => onAnswer(false, "I don't know") }, "I don't know")));
+    }
+    const lock = () => { area.querySelectorAll('button').forEach(b => b.disabled = true); };
+    host.append(area);
+    return;
+  }
+  const list = choicesOf(q);
+  const btns = list.map(c => {
+    const b = el('button', { class: 'choice', onclick: () => {
+      if (done) return;
+      if (!feedback) { done = true; btns.forEach(x => { x.disabled = true; }); b.classList.add('sel'); onAnswer(c.ok, c.t); return; }
+      done = true; btns.forEach(x => x.disabled = true);
+      btns.forEach((x, i) => { if (list[i].ok) x.classList.add('right'); });
+      if (!c.ok) b.classList.add('wrong');
+      fx(host, c.ok); recordResult(q.id, c.ok); reveal(c.ok); onAnswer(c.ok, c.t);
+    } }, c.t);
+    return b;
+  });
+  host.append(...btns);
+}
+
+// ---------- practice ----------
+const answered = {};
+function practice(qs) {
+  const render = () => {
+    app.replaceChildren(
+      el('div', { class: 'row' }, el('button', { class: 'btn ghost', onclick: home }, '← Topics'), el('strong', {}, state.topic === '*' ? 'All topics' : state.topic), el('span', { class: 'mute' }, `· practice · ${qs.length} questions`)),
+      el('p', { class: 'mute' }, 'Click a question to open it.'));
+    qs.forEach((q, i) => {
+      const a = answered[q.id];
+      const slot = el('div', {});
+      const item = el('button', { class: 'qitem', onclick: () => {
+        if (slot.firstChild) { slot.replaceChildren(); return; }
+        const card = el('div', { class: 'card pop' });
+        slot.append(card);
+        renderQuestion(q, card, { feedback: true, onAnswer: ok => { answered[q.id] = ok; item.querySelector('.dot').className = 'dot ' + (ok ? 'ok' : 'bad'); } });
+        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } }, el('span', { class: 'dot ' + (a === undefined ? '' : a ? 'ok' : 'bad') }), el('span', {}, el('span', { class: 'mute' }, `${i + 1}. `), q.q));
+      app.append(item, slot);
+    });
+  };
+  render();
+}
+
+// ---------- test ----------
+function test(pool) {
+  const qs = shuffle(pool).slice(0, 10);
+  const res = [];
+  let i = 0;
+  const step = () => {
+    if (i >= qs.length) return finish();
+    const q = qs[i];
+    const host = el('div', { class: 'card pop' });
+    const next = el('button', { class: 'btn', disabled: '', onclick: () => { i++; step(); } }, i === qs.length - 1 ? 'Finish' : 'Next →');
+    app.replaceChildren(
+      el('div', { class: 'row' }, el('button', { class: 'btn ghost', onclick: () => { if (confirm('Leave this test?')) home(); } }, 'Quit'), el('strong', {}, `Question ${i + 1} / ${qs.length}`)),
+      el('div', { class: 'bar' }, el('i', { style: `width:${(i / qs.length) * 100}%` })), host, next);
+    renderQuestion(q, host, { feedback: false, onAnswer: (ok, picked) => { res[i] = { q, ok, picked }; next.disabled = false; } });
+  };
+  const finish = () => {
+    res.forEach(r => recordResult(r.q.id, r.ok));
+    const right = res.filter(r => r.ok).length;
+    app.replaceChildren(
+      el('div', { class: 'card pop', id: 'scorecard' }, el('div', { class: 'mute' }, 'Test finished'), el('div', { class: 'score' }, `${right} / ${qs.length}`), el('div', { class: 'mute' }, right === qs.length ? 'Perfect run.' : right >= qs.length * .72 ? 'Above the 72% pass line.' : 'Below the 72% pass line. Review the misses below.'),
+        el('div', { class: 'modes' }, el('button', { class: 'btn', onclick: () => test(pool) }, 'New 10'), el('button', { class: 'btn ghost', onclick: home }, 'Topics'))),
+      el('h2', {}, 'Review'));
+    setTimeout(() => fx($('#scorecard'), right >= qs.length * .72), 200);
+    res.forEach((r, k) => {
+      const q = r.q;
+      app.append(el('div', { class: 'res', style: `animation-delay:${k * 140}ms` },
+        el('div', { class: 'mark', style: `color:var(--${r.ok ? 'ok' : 'bad'})` }, r.ok ? '✓' : '✗'),
+        el('div', {}, meta(q), el('div', { style: 'font-weight:600;margin:4px 0;white-space:pre-wrap' }, q.fullQ || q.q),
+          el('div', {}, el('span', { class: 'mute' }, 'You: '), r.picked),
+          r.ok ? '' : el('div', {}, el('span', { class: 'mute' }, 'Correct: '), q.correct),
+          q.note ? el('div', { class: 'mute', style: 'font-size:.88rem;margin-top:4px' }, q.note) : '')));
+    });
+    window.scrollTo({ top: 0 });
+  };
+  step();
+}
+
+home();
+</script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+[
+  {
+    "id": "ex-1",
+    "source": "Example",
+    "q": "Site-to-Site VPN: which side does the Virtual Private Gateway live on?",
+    "correct": "AWS side. The Customer Gateway represents the on-premises device.",
+    "myWrong": "On-premises side, with the Customer Gateway in AWS.",
+    "note": "VGW = AWS-side VPN endpoint attached to the VPC. Customer Gateway = AWS resource describing your on-prem router.",
+    "domains": ["Secure"],
+    "services": ["Direct Connect / VPN"],
+    "status": "confirmed"
+  },
+  {
+    "id": "ex-2",
+    "source": "Example",
+    "q": "Which service records who made an API call against an S3 bucket?",
+    "correct": "AWS CloudTrail.",
+    "myWrong": "S3 server access logs queried with Athena.",
+    "note": "CloudTrail = API audit trail (who, what, when). Access logs = request-level detail, best effort, not the audit tool AWS recommends.",
+    "domains": ["Secure"],
+    "services": ["S3", "CloudTrail / Config"],
+    "status": "confirmed"
+  },
+  {
+    "id": "ex-3",
+    "source": "Example",
+    "q": "Spread placement group: how many running instances per AZ per group?",
+    "correct": "7.",
+    "myWrong": "No limit.",
+    "note": "Spread = each instance on distinct hardware, max 7 per AZ. Divide instance count by 7 and round up to get the number of AZs needed.",
+    "domains": ["Resilient"],
+    "services": ["EC2"],
+    "status": "confirmed"
+  },
+  {
+    "id": "ex-4",
+    "source": "Example",
+    "q": "Can you edit an existing Launch Configuration?",
+    "correct": "No. Create a new one and point the Auto Scaling group at it.",
+    "myWrong": "Yes, edit it in place.",
+    "note": "Launch Configurations are immutable. Launch Templates support versions, which is why they replaced Launch Configurations.",
+    "domains": ["Resilient"],
+    "services": ["Auto Scaling"],
+    "status": "confirmed"
+  },
+  {
+    "id": "ex-5",
+    "source": "Example",
+    "q": "Best way to give users in one AWS account access to another account?",
+    "correct": "An IAM role in the target account that the users assume.",
+    "myWrong": "Share IAM user credentials from the target account.",
+    "note": "Cross-account access = roles + sts:AssumeRole. Never share long-term credentials.",
+    "domains": ["Secure"],
+    "services": ["IAM"],
+    "status": "confirmed"
+  },
+  {
+    "id": "ex-6",
+    "source": "Example",
+    "q": "Allow only the load balancer to reach EC2 on port 80. What goes in the instance security group?",
+    "correct": "Inbound TCP 80 with the load balancer's security group as the source.",
+    "myWrong": "Inbound TCP 80 from the load balancer subnet CIDR.",
+    "note": "Referencing a security group follows the members wherever their IPs are. A CIDR also lets anything else in that subnet through.",
+    "domains": ["Secure"],
+    "services": ["VPC", "ELB"],
+    "status": "confirmed"
+  },
+  {
+    "id": "ex-7",
+    "source": "Example",
+    "q": "Where does a NAT Gateway live?",
+    "correct": "In a public subnet, with an Elastic IP. Private subnets route 0.0.0.0/0 to it.",
+    "myWrong": "In the private subnet it serves.",
+    "note": "The NAT Gateway itself needs a route to the Internet Gateway, so it sits in a public subnet.",
+    "domains": ["High-Performing"],
+    "services": ["VPC"],
+    "status": "confirmed"
+  },
+  {
+    "id": "ex-8",
+    "source": "Example",
+    "q": "Does ACM renew imported third-party certificates?",
+    "correct": "No. Only certificates ACM issued are renewed automatically.",
+    "myWrong": "Yes, all certificates in ACM auto-renew.",
+    "note": "Watch imported certificates with the AWS Config managed rule for certificate expiry, plus an SNS notification.",
+    "domains": ["Secure"],
+    "services": ["ACM"],
+    "status": "confirmed"
+  },
+  {
+    "id": "ex-9",
+    "source": "Example",
+    "q": "Is VPC peering transitive?",
+    "correct": "No. A peered with B and B peered with C does not let A reach C.",
+    "myWrong": null,
+    "note": "Need transitive routing between many VPCs? Use Transit Gateway.",
+    "domains": ["High-Performing"],
+    "services": ["VPC"],
+    "status": "confirmed"
+  },
+  {
+    "id": "ex-10",
+    "source": "Example",
+    "q": "Which S3 feature makes objects impossible to delete or overwrite for a set period, even by root?",
+    "options": ["Object Lock in compliance mode", "MFA Delete", "Versioning", "Object Lock in governance mode"],
+    "correctIndex": 0,
+    "correct": "Object Lock in compliance mode.",
+    "myWrong": null,
+    "note": "Governance mode can be bypassed with special permissions. Compliance mode cannot be bypassed by anyone until retention ends.",
+    "domains": ["Secure"],
+    "services": ["S3"],
+    "status": "confirmed"
+  }
+]

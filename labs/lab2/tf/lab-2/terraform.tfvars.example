@@ -1,0 +1,8 @@
+# Copy this file to terraform.tfvars.
+#
+# Replace this with your current public IPv4 address.
+# The /32 means "this one IPv4 address only".
+ssh_allowed_cidr = "YOUR.PUBLIC.IP.ADDRESS/32"
+
+# Optional. This must be an existing EC2 key pair in the selected region.
+# key_name = "your-existing-ec2-key-pair"

@@ -1,0 +1,970 @@
+# AWS SAA Lab 1: Two-EC2 Security Group Puzzle
+
+## 1. Objective
+
+Build and verify the following AWS architecture:
+
+```text
+                         Internet
+                            │
+                         SSH :22
+                            │
+                            ▼
+                       ┌──────────┐
+                       │  EC2-A   │
+                       │          │
+                       │ SG-A     │
+                       └────┬─────┘
+                            │
+                         HTTP :80
+                            │
+                            ▼
+                       ┌──────────┐
+                       │  EC2-B   │
+                       │          │
+                       │ SG-B     │
+                       └──────────┘
+```
+
+Requirements:
+
+* EC2-A must be reachable through SSH from my computer.
+* EC2-A must be able to access EC2-B over HTTP.
+* EC2-B must **not** be directly accessible from the Internet over HTTP.
+* EC2-B should accept HTTP traffic only from EC2-A.
+* Return traffic should work without creating an explicit inbound rule for the response traffic.
+
+The main SAA concepts being tested were:
+
+* Security Group references
+* Stateful Security Groups
+* Private vs public EC2 connectivity
+* Security Group troubleshooting
+* Testing network connectivity with `nc` and `curl`
+* EC2 Instance Connect Endpoint
+* The difference between network reachability and application availability
+
+---
+
+# 2. AWS Region
+
+The original plan was to use Frankfurt:
+
+```text
+eu-central-1
+```
+
+However, the resources were actually created in Stockholm:
+
+```text
+eu-north-1
+```
+
+This did not affect the concepts being tested. The lab continued in `eu-north-1`.
+
+Availability Zone:
+
+```text
+eu-north-1a
+```
+
+VPC:
+
+```text
+vpc-0example1
+```
+
+Subnet:
+
+```text
+subnet-0example1
+```
+
+---
+
+# 3. SSH Key Pair
+
+Created an RSA key pair:
+
+```text
+Name: saa-lab-1
+Type: RSA
+Format: .pem
+```
+
+Local setup:
+
+```bash
+mkdir -p ~/.ssh/aws
+mv saa-lab-1.pem ~/.ssh/aws/
+chmod 400 ~/.ssh/aws/saa-lab-1.pem
+```
+
+The permissions are important because OpenSSH rejects private keys that are too accessible.
+
+---
+
+# 4. Security Groups
+
+## 4.1 EC2-A Security Group
+
+Name:
+
+```text
+saa-lab-1-a
+```
+
+ID:
+
+```text
+sg-0example1
+```
+
+Purpose:
+
+Security Group for EC2-A.
+
+### Inbound
+
+| Protocol | Port | Source               |
+| -------- | ---: | -------------------- |
+| TCP      |   22 | `<public-ip>/32` |
+
+This allows SSH only from my current public IP.
+
+### Outbound
+
+Default:
+
+```text
+All traffic → 0.0.0.0/0
+```
+
+---
+
+# 5. EC2-B Security Group
+
+Name:
+
+```text
+saa-lab-1-b
+```
+
+ID:
+
+```text
+sg-0example2
+```
+
+Final intended inbound rules:
+
+| Protocol | Port | Source                                 | Purpose                                         |
+| -------- | ---: | -------------------------------------- | ----------------------------------------------- |
+| TCP      |   80 | `saa-lab-1-a` (`sg-0example1`) | Allow HTTP from EC2-A                           |
+| TCP      |   22 | EICE SG (`sg-0example3`)       | Allow SSH through EC2 Instance Connect Endpoint |
+
+Outbound:
+
+```text
+All traffic → 0.0.0.0/0
+```
+
+The important rule is:
+
+```text
+TCP 80
+Source = EC2-A Security Group
+```
+
+NOT:
+
+```text
+0.0.0.0/0
+```
+
+and NOT:
+
+```text
+172.31.26.167/32
+```
+
+The Security Group reference is the important SAA concept.
+
+---
+
+# 6. EC2 Instances
+
+## EC2-A
+
+Name:
+
+```text
+saa-lab-1-a
+```
+
+Instance ID:
+
+```text
+i-0example1
+```
+
+Instance type:
+
+```text
+t3.micro
+```
+
+AMI:
+
+```text
+Debian 13
+ami-0example1
+```
+
+Username:
+
+```text
+admin
+```
+
+Availability Zone:
+
+```text
+eu-north-1a
+```
+
+Public IPv4:
+
+```text
+<public-ip>
+```
+
+Private IPv4:
+
+```text
+172.31.26.167
+```
+
+Public DNS:
+
+```text
+ec2-<public-ip>.eu-north-1.compute.amazonaws.com
+```
+
+Security Group:
+
+```text
+saa-lab-1-a
+```
+
+---
+
+## EC2-B
+
+Name:
+
+```text
+saa-lab-1-b
+```
+
+Instance ID:
+
+```text
+i-0example2
+```
+
+Instance type:
+
+```text
+t3.micro
+```
+
+AMI:
+
+```text
+Debian 13
+```
+
+Availability Zone:
+
+```text
+eu-north-1a
+```
+
+Private IPv4:
+
+```text
+172.31.16.13
+```
+
+Public IPv4:
+
+```text
+None
+```
+
+Public DNS:
+
+```text
+None
+```
+
+Security Group:
+
+```text
+saa-lab-1-b
+```
+
+This was intentional.
+
+EC2-B was supposed to behave like a private backend server rather than an Internet-facing machine.
+
+---
+
+# 7. First SSH Test
+
+SSH to EC2-A from the local computer:
+
+```bash
+ssh -i ~/.ssh/aws/saa-lab-1.pem admin@<public-ip>
+```
+
+This succeeded.
+
+Therefore:
+
+```text
+Laptop
+   │
+   │ SSH :22
+   ▼
+EC2-A
+```
+
+was working.
+
+---
+
+# 8. Problem: How to Access Private EC2-B?
+
+EC2-B had no public IP.
+
+Therefore, direct SSH from my computer was not possible.
+
+The lab introduced an:
+
+```text
+EC2 Instance Connect Endpoint
+```
+
+EICE Security Group:
+
+```text
+sg-0example3
+```
+
+Endpoint:
+
+```text
+eice-0f494d3dd695628e4
+```
+
+Status:
+
+```text
+create-complete
+```
+
+The endpoint was created in the same VPC.
+
+---
+
+# 9. EC2 Instance Connect Endpoint Troubleshooting
+
+Initially, EC2 Instance Connect from the AWS Console failed.
+
+We checked several things:
+
+### EC2-B
+
+* Instance running
+* Status checks passed
+* Debian 13 official image
+* EC2 Instance Connect components expected to be available
+* IMDS enabled
+
+### EICE
+
+* Endpoint existed
+* Status was `create-complete`
+* EICE Security Group existed
+* EICE outbound traffic allowed
+
+### VPC networking
+
+The subnet had the expected local VPC route:
+
+```text
+172.31.0.0/16
+```
+
+The local AWS CLI credentials were also tested:
+
+```bash
+aws sts get-caller-identity
+```
+
+but returned:
+
+```text
+InvalidClientTokenId:
+The security token included in the request is invalid.
+```
+
+This was a **separate AWS CLI credential problem**.
+
+It was not the reason to assume that the EC2 networking itself was broken.
+
+---
+
+# 10. Diagnosing EC2-A → EC2-B
+
+We tested connectivity from EC2-A to EC2-B.
+
+Initially:
+
+```bash
+nc -vz -w 5 172.31.16.13 22
+```
+
+returned a timeout.
+
+This was expected because EC2-B's Security Group did not allow SSH from EC2-A.
+
+At this point, we temporarily added:
+
+```text
+TCP 22
+Source = saa-lab-1-a
+```
+
+to EC2-B's Security Group.
+
+Then:
+
+```bash
+nc -vz -w 5 172.31.16.13 22
+```
+
+returned:
+
+```text
+Connection to 172.31.16.13 22 port [tcp/ssh] succeeded!
+```
+
+This was an important diagnostic result.
+
+It proved:
+
+* EC2-A could reach EC2-B at the network level.
+* EC2-B's SSH daemon was reachable.
+* The VPC routing path was working.
+* The previous timeout was caused by the Security Group rule.
+
+---
+
+# 11. SSH Agent Forwarding
+
+We connected to EC2-A using SSH agent forwarding:
+
+```bash
+ssh -A -i ~/.ssh/aws/saa-lab-1.pem admin@<public-ip>
+```
+
+Then, from EC2-A:
+
+```bash
+ssh admin@172.31.16.13
+```
+
+Initially this produced:
+
+```text
+Permission denied (publickey)
+```
+
+After configuring/using SSH agent forwarding correctly, the connection succeeded:
+
+```text
+admin@ip-172-31-16-13:~$
+```
+
+Therefore we were able to reach EC2-B through EC2-A.
+
+---
+
+# 12. Important Cleanup
+
+The temporary SSH rule:
+
+```text
+EC2-A SG → EC2-B TCP 22
+```
+
+was removed.
+
+This was important because it was only a troubleshooting rule.
+
+The final architecture should not allow EC2-A to SSH directly into EC2-B.
+
+Final intended access:
+
+```text
+EC2-A → EC2-B :80    ALLOWED
+EC2-A → EC2-B :22    DENIED
+EICE → EC2-B :22     ALLOWED
+```
+
+---
+
+# 13. First HTTP Test
+
+Before installing a web server, we tested:
+
+```bash
+curl -v --connect-timeout 5 http://172.31.16.13:80
+```
+
+The result was:
+
+```text
+Connection refused
+```
+
+This was different from a timeout.
+
+### Meaning
+
+The network path was reachable, but nothing was listening on TCP port 80.
+
+This distinction is useful when troubleshooting:
+
+```text
+TIMEOUT
+    ↓
+Often network/security/routing problem
+
+CONNECTION REFUSED
+    ↓
+Host is reachable,
+but application/service is not listening
+```
+
+---
+
+# 14. Problem: Installing Nginx on EC2-B
+
+We attempted:
+
+```bash
+sudo apt update
+sudo apt install nginx -y
+```
+
+However, EC2-B had no working Internet egress.
+
+APT reported failures connecting to Debian mirrors.
+
+IPv6 attempts produced:
+
+```text
+Network is unreachable
+```
+
+IPv4 connections timed out.
+
+We also tested:
+
+```bash
+curl -4 --connect-timeout 5 https://deb.debian.org
+```
+
+which timed out.
+
+---
+
+# 15. Why EC2-B Could Not Reach the Internet
+
+EC2-B had:
+
+```text
+172.31.16.13
+```
+
+but no public IPv4 address.
+
+It did have a default route:
+
+```text
+default via 172.31.16.1 dev ens5
+```
+
+and the VPC local route.
+
+However, having a default route does not automatically mean an instance has Internet access.
+
+For private instances to reach the Internet, AWS normally requires an appropriate egress design, such as:
+
+```text
+Private EC2
+    ↓
+NAT Gateway
+    ↓
+Internet Gateway
+    ↓
+Internet
+```
+
+A NAT Gateway would be unnecessary for this lab.
+
+Therefore, instead of modifying the architecture just to install Nginx, we used Python's built-in HTTP server.
+
+---
+
+# 16. Creating a Temporary HTTP Server
+
+On EC2-B:
+
+```bash
+sudo python3 -m http.server 80 --bind 0.0.0.0
+```
+
+This started an HTTP server on:
+
+```text
+0.0.0.0:80
+```
+
+No package installation was required.
+
+---
+
+# 17. Testing EC2-A → EC2-B HTTP
+
+From EC2-A:
+
+```bash
+curl -v http://172.31.16.13
+```
+
+Result:
+
+```text
+HTTP/1.0 200 OK
+Server: SimpleHTTP/0.6 Python/3.13.5
+```
+
+The response also showed a directory listing.
+
+Therefore:
+
+```text
+EC2-A ───── HTTP :80 ─────▶ EC2-B
+```
+
+worked.
+
+---
+
+# 18. Final Security Group Experiment
+
+After removing the temporary SSH rule from EC2-B, we tested both ports from EC2-A.
+
+### Port 22
+
+```bash
+nc -vz -w 5 172.31.16.13 22
+```
+
+Result:
+
+```text
+nc: connect to 172.31.16.13 port 22 timed out
+```
+
+Therefore:
+
+```text
+EC2-A → EC2-B :22
+❌ BLOCKED
+```
+
+### Port 80
+
+```bash
+curl http://172.31.16.13
+```
+
+Result:
+
+```text
+HTTP/1.0 200 OK
+Server: SimpleHTTP/0.6 Python/3.13.5
+```
+
+Therefore:
+
+```text
+EC2-A → EC2-B :80
+✅ ALLOWED
+```
+
+This was the core experiment.
+
+---
+
+# 19. Final Experimental Result
+
+```text
+                    EC2-A
+                 172.31.26.167
+                      │
+              ┌───────┴───────┐
+              │               │
+           TCP 22           TCP 80
+              │               │
+              ▼               ▼
+          EC2-B            EC2-B
+       172.31.16.13     172.31.16.13
+              │               │
+              ❌              ✅
+           timeout         HTTP 200
+```
+
+Same:
+
+* VPC
+* subnet
+* source instance
+* destination instance
+* network path
+
+Different:
+
+```text
+Security Group rule
+```
+
+This isolated the Security Group as the reason for the different behavior.
+
+---
+
+# 20. The Core SAA Lesson
+
+For EC2-B:
+
+```text
+HTTP :80
+Source = EC2-A Security Group
+```
+
+is the correct design.
+
+Not:
+
+```text
+Source = 0.0.0.0/0
+```
+
+because that would allow HTTP from anywhere.
+
+Not:
+
+```text
+Source = EC2-A private IP
+```
+
+because the Security Group reference is the appropriate dynamic identity-based rule.
+
+Instead:
+
+```text
+Source = sg-0example1
+```
+
+or, in the console:
+
+```text
+saa-lab-1-a
+```
+
+This means:
+
+> Allow HTTP traffic from network interfaces associated with EC2-A's Security Group.
+
+---
+
+# 21. Stateful Security Groups
+
+Security Groups are stateful.
+
+Suppose:
+
+```text
+EC2-A
+   │
+   │ HTTP request
+   ▼
+EC2-B
+```
+
+EC2-B's inbound Security Group rule permits the request.
+
+The response:
+
+```text
+EC2-B
+   │
+   │ HTTP response
+   ▼
+EC2-A
+```
+
+does not require a separate inbound rule on EC2-A specifically for the return traffic.
+
+The Security Group tracks the established connection.
+
+Therefore:
+
+```text
+Inbound allowed
+        ↓
+Return traffic automatically allowed
+```
+
+This is different from a stateless Network ACL.
+
+---
+
+# 22. Exam Mental Model
+
+When you see a question like:
+
+> EC2-A needs to communicate with EC2-B over HTTP. EC2-B should only accept HTTP traffic originating from EC2-A.
+
+Think:
+
+```text
+EC2-A
+  │
+  │ HTTP :80
+  ▼
+EC2-B
+```
+
+Then:
+
+```text
+EC2-B Security Group
+--------------------
+Inbound
+TCP 80
+Source = EC2-A Security Group
+```
+
+The key phrase to recognize is:
+
+```text
+"from another EC2 instance / security group"
+```
+
+That usually points toward:
+
+```text
+Security Group reference
+```
+
+rather than an IP address.
+
+---
+
+# 23. Troubleshooting Lessons
+
+## Timeout vs Connection Refused
+
+### Timeout
+
+Example:
+
+```text
+nc: connect ... timed out
+```
+
+Potential causes:
+
+* Security Group blocking traffic
+* Network ACL
+* Routing problem
+* Missing network path
+* Firewall silently dropping packets
+
+### Connection refused
+
+Example:
+
+```text
+Connection refused
+```
+
+Usually means:
+
+* The destination is reachable.
+* The port is not being accepted by a listening application.
+* The service may not be running.
+
+In this lab:
+
+```text
+Port 80 before Python server:
+Connection refused
+```
+
+Then:
+
+```text
+Port 80 after Python server:
+HTTP 200
+```
+
+That demonstrated the distinction.
+
+---
+
+# 24. Why We Used `nc` and `curl`
+
+`nc` was useful for testing the TCP connection itself:
+
+```bash
+nc -vz -w 5 <IP> <PORT>
+```
+
+Example:
+
+```bash
+nc -vz -w 5 172.31.16.13 22
+```
+
+This asks essentially:
+
+> Can I establish a TCP connection to this port?
+
+`curl` was useful for testing the application layer:
+
+```bash
+curl http://172.31.16.13
+```
+
+This asks:
+
+> Can I actually communicate
+
